@@ -69,7 +69,9 @@ publishing {
 }
 
 signing {
-    useGpgCmd()
-
-    sign(publishing.publications)
+    // Solo firmar si no se especifica skipSigning
+    if (!project.hasProperty("skipSigning")) {
+        useGpgCmd()
+        sign(publishing.publications)
+    }
 }
