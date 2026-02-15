@@ -30,8 +30,7 @@ Applied to extension subprojects by the settings plugin
 
 > [!CAUTION]
 > This plugin is not stable yet and likely to change due to lacking experience with Gradle plugins.  
-> If you have experience with Gradle plugins and can help improve this plugin,
-> consider reaching out to us at gradle-plugin@ExtenRe.app or by opening an issue.
+> If you have experience with Gradle plugins and can help improve this plugin.
 
 ## 📜 Licence
 
