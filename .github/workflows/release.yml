@@ -18,35 +18,60 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # Make sure the release step uses its own credentials:
-          # https://github.com/cycjimmy/semantic-release-action#private-packages
+          # Importante para que semantic-release pueda hacer push usando su propia autenticación
           persist-credentials: false
+          # Necesario para que semantic-release pueda acceder al historial completo
           fetch-depth: 0
 
+      # Cache de Gradle para acelerar las builds
       - name: Cache Gradle
         uses: burrunan/gradle-cache-action@v1
+        # No necesita configuración adicional, usa los archivos de Gradle por defecto
 
+      # 👇 SOLUCIÓN: dar permisos de ejecución al wrapper de Gradle
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      # Compilar el proyecto con Gradle
       - name: Build
         env:
           GITHUB_TOKEN: ${{ secrets.EXTENRE_TOKEN }}
         run: ./gradlew build
 
+      # Configurar Node.js para semantic-release
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "lts/*"
           cache: 'npm'
 
+      # Instalar dependencias (donde estará semantic-release y plugins)
       - name: Install dependencies
         run: npm install
 
+      # 👇 Importar la clave GPG para firmar commits/tags durante la release
+      # Asegúrate de tener estos secretos configurados en tu repositorio:
+      # - GPG_PRIVATE_KEY: contenido de la clave privada (ASCII armor)
+      # - GPG_PASSPHRASE: frase de contraseña de la clave (si tiene)
+      # - GPG_FINGERPRINT: huella digital de la clave/subclave de firma (la que tenga [S])
       - name: Import GPG key
+        id: import-gpg
         uses: crazy-max/ghaction-import-gpg@v6
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.GPG_PASSPHRASE }}
-          fingerprint: ${{ env.GPG_FINGERPRINT }}
+          fingerprint: ${{ secrets.GPG_FINGERPRINT }}  # ← recomendado usar secreto
 
+      # Opcional: configurar Git para usar la clave GPG recién importada
+      # Esto es necesario si semantic-release va a crear commits firmados
+      - name: Configure Git for GPG signing
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.signingkey ${{ steps.import-gpg.outputs.fingerprint }}
+          git config commit.gpgsign true
+
+      # Ejecutar semantic-release
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.EXTENRE_TOKEN }}
