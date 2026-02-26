@@ -58,15 +58,16 @@ publishing {
             name = "GitHubPackages"
             url = uri("https://maven.pkg.github.com/LuisCupul04/ExtenRe-patches-gradle-plugin")
             credentials {
-                username = System.getenv("GITHUB_ACTOR")
-                password = System.getenv("GITHUB_TOKEN")
+                username = providers.gradleProperty("gpr.user").orElse(System.getenv("GITHUB_ACTOR")).get()
+                password = providers.gradleProperty("gpr.key").orElse(System.getenv("GITHUB_TOKEN")).get()
             }
         }
     }
 }
 
 signing {
-    useGpgCmd()
-
+    val gpgKey = System.getenv("GPG_KEY") ?: return@signing
+    val gpgPassphrase = System.getenv("GPG_PASSPHRASE") ?: return@signing
+    useInMemoryPgpKeys(gpgKey, gpgPassphrase)
     sign(publishing.publications)
 }
