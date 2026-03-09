@@ -58,13 +58,16 @@ abstract class SettingsPlugin @Inject constructor(
     /**
      * Add the patches and extension projects to the root project.
      */
-    private fun Settings.configureIncludeProjects(extension: SettingsExtension) {
-        include(extension.patchesProjectPath.get())
+     
+     private fun Settings.configureIncludeProjects(extension: SettingsExtension) {
+    include(extension.patchesProjectPath.get())
 
-        objectFactory.fileTree().from(settingsDir.resolve(extension.extensionsProjectPath.get())).matching {
-            it.include("**/build.gradle.kts")
-        }.forEach {
-            include(it.relativeTo(settingsDir).toPath().joinToString(":"))
+    objectFactory.fileTree().from(settingsDir.resolve(extension.extensionsProjectPath.get())).matching {
+        it.include("**/build.gradle.kts")
+    }.forEach { file ->
+        val projectDir = file.parentFile // ← Directorio que contiene build.gradle.kts
+        val projectPath = projectDir.relativeTo(settingsDir).toPath().joinToString(":")
+        include(projectPath)
         }
     }
 
