@@ -7,6 +7,11 @@ on:
       - master
       - dev
 
+# Variable opcional para forzar el uso de Node.js 24 en acciones JavaScript
+# y eliminar las advertencias de deprecación de Node.js 20.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   release:
     name: Release
@@ -18,13 +23,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # Make sure the release step uses its own credentials:
-          # https://github.com/cycjimmy/semantic-release-action#private-packages
+          # Importante para que semantic-release pueda hacer push usando el token adecuado
           persist-credentials: false
           fetch-depth: 0
 
+      # Paso añadido para instalar Java 21, necesario para compilar el plugin
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'      # Distribución de Eclipse Temurin (antes AdoptOpenJDK)
+          java-version: '21'
+
+      # Cache de Gradle (acción de terceros). Si los errores de caché persisten,
+      # se puede reemplazar por actions/cache@v4 (ver ejemplo comentado abajo)
       - name: Cache Gradle
         uses: burrunan/gradle-cache-action@v1
+        # Alternativa con actions/cache:
+        # uses: actions/cache@v4
+        # with:
+        #   path: |
+        #     ~/.gradle/caches
+        #     ~/.gradle/wrapper
+        #   key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        #   restore-keys: |
+        #     ${{ runner.os }}-gradle-
 
       - name: Build
         env:
