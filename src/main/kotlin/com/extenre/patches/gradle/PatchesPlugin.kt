@@ -68,25 +68,25 @@ abstract class PatchesPlugin : Plugin<Project> {
     }
 
     /**
-     * Configures the Kotlin plugin with JVM 17.
+     * Configures the Kotlin plugin with JVM 21.
      */
     private fun Project.configureKotlin() {
         pluginManager.apply(KotlinPluginWrapper::class.java)
 
         extensions.configure<KotlinJvmProjectExtension>("kotlin") {
             it.compilerOptions {
-                jvmTarget.set(JvmTarget.JVM_17)
+                jvmTarget.set(JvmTarget.JVM_21)
             }
         }
     }
 
     /**
-     * Configures the Java plugin with Java 17.
+     * Configures the Java plugin with Java 21.
      * Additionally, adds sources and javadoc JARs, as patches have a public API.
      */
     private fun Project.configureJava() {
         extensions.configure<JavaPluginExtension>("java") {
-            it.targetCompatibility = JavaVersion.VERSION_17
+            it.targetCompatibility = JavaVersion.VERSION_21
 
             it.withSourcesJar()
             it.withJavadocJar()
