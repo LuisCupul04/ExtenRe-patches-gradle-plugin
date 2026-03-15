@@ -75,7 +75,7 @@ abstract class PatchesPlugin : Plugin<Project> {
 
         extensions.configure<KotlinJvmProjectExtension>("kotlin") {
             it.compilerOptions {
-                jvmTarget.set(JvmTarget.JVM_21)
+                jvmTarget.set(JvmTarget.JVM_17)
             }
         }
     }
@@ -86,7 +86,7 @@ abstract class PatchesPlugin : Plugin<Project> {
      */
     private fun Project.configureJava() {
         extensions.configure<JavaPluginExtension>("java") {
-            it.targetCompatibility = JavaVersion.VERSION_21
+            it.targetCompatibility = JavaVersion.VERSION_17
 
             it.withSourcesJar()
             it.withJavadocJar()

@@ -84,13 +84,13 @@ abstract class ExtensionPlugin : Plugin<Project> {
                     }
                 }
                 compileOptions {
-                    sourceCompatibility = JavaVersion.VERSION_21
-                    targetCompatibility = JavaVersion.VERSION_21
+                    sourceCompatibility = JavaVersion.VERSION_17
+                    targetCompatibility = JavaVersion.VERSION_17
                 }
             }
 
             extensions.findByType(KotlinAndroidProjectExtension::class.java)?.compilerOptions {
-                jvmTarget.set(JvmTarget.JVM_21)
+                jvmTarget.set(JvmTarget.JVM_17)
             }
         }
     }
