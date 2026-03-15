@@ -31,39 +31,70 @@ abstract class ExtensionPlugin : Plugin<Project> {
         project.configureArtifactSharing(extension)
         project.configureAndroid()
     }
-
+    
     private fun Project.configureArtifactSharing(extension: ExtensionExtension) {
-        val syncExtensionTask = tasks.register("syncExtension", Sync::class.java) { syncTask ->
-            syncTask.group = "extenre"
-            syncTask.description = "Copies the extension dex file to the build directory."
+    // Registrar la tarea que genera el DEX a partir del AAR
+    val generateDexTask = tasks.register("generateExtensionDex", Sync::class.java) { syncTask ->
+        syncTask.group = "extenre"
+        syncTask.description = "Generates DEX from the extension AAR."
 
-            syncTask.dependsOn("assembleRelease")
+        // Depender de la tarea que ensambla el AAR
+        syncTask.dependsOn("bundleReleaseAar")
 
-            val apkFile = layout.buildDirectory.dir("outputs/apk/release").map { dir ->
-                dir.asFile.listFiles { _, name -> name.endsWith(".apk") }?.firstOrNull()
-                    ?: error("No APK found in release output")
+        // Obtener el archivo AAR generado
+        val aarFile = layout.buildDirectory.file("outputs/aar/${name}-release.aar").get().asFile
+
+        // Directorio temporal para extraer el contenido del AAR
+        val extractDir = layout.buildDirectory.dir("tmp/extractAar").get().asFile
+        syncTask.doFirst {
+            extractDir.deleteRecursively()
+            extractDir.mkdirs()
+            // Extraer el AAR (es un ZIP)
+            project.copy {
+                it.from(project.zipTree(aarFile))
+                it.into(extractDir)
             }
-
-            syncTask.from(project.zipTree(apkFile)) {
-                it.include("classes.dex")
-            }
-
-            syncTask.into(
-                layout.buildDirectory.zip(extension.name) { buildDir, extensionName ->
-                    buildDir.dir("extenre/${Path(extensionName).parent.pathString}")
-                }
-            )
-
-            syncTask.rename { "${Path(extension.name.get()).fileName}" }
         }
 
-        configurations.consumable("extensionConfiguration").also { configuration ->
-            artifacts.add(
-                configuration.name,
-                layout.buildDirectory.dir("extenre"),
-            ) { artifact -> artifact.builtBy(syncExtensionTask) }
+        // Ruta del classes.jar extraído
+        val classesJar = extractDir.resolve("classes.jar")
+
+        // Directorio de salida para el DEX
+        val dexOutputDir = layout.buildDirectory.dir("extenre/dex").get().asFile
+        syncTask.doFirst {
+            dexOutputDir.mkdirs()
+            // Ejecutar D8 sobre el JAR para generar DEX
+            com.android.tools.r8.D8Command.builder()
+                .addProgramFiles(classesJar.toPath())
+                .setMode(com.android.tools.r8.CompilationMode.RELEASE)
+                .setOutput(dexOutputDir.toPath(), com.android.tools.r8.OutputMode.DexIndexed)
+                .build()
+                .let(com.android.tools.r8.D8::run)
         }
+
+        // Incluir el DEX generado en la sincronización
+        syncTask.from(dexOutputDir) {
+            it.include("*.dex")
+        }
+
+        // Directorio final donde se copiará el DEX (estructura original)
+        val finalDir = layout.buildDirectory.zip(extension.name) { buildDir, extensionName ->
+            buildDir.dir("extenre/${Path(extensionName).parent.pathString}")
+        }
+        syncTask.into(finalDir)
+
+        // Renombrar el DEX al nombre esperado (ej: shared.dex)
+        syncTask.rename { "${Path(extension.name.get()).fileName}" }
     }
+
+    // Configurar el artefacto consumible
+    configurations.consumable("extensionConfiguration").also { configuration ->
+        artifacts.add(
+            configuration.name,
+            layout.buildDirectory.dir("extenre"),
+        ) { artifact -> artifact.builtBy(generateDexTask) }
+    }
+}
 
     private fun Project.configureAndroid() {
         // No aplicamos el plugin de Android aquí, solo configuramos si ya está aplicado
