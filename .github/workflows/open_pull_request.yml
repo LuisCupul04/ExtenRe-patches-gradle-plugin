@@ -1,4 +1,4 @@
-name: Open a PR to main
+name: Open a PR to master
 
 on:
   push:
@@ -16,11 +16,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # 🔹 Obtiene todo el historial y todas las ramas
+
+      - name: Fetch master branch (safety)
+        run: git fetch origin master
+
+      - name: Debug branches (optional)
+        run: git branch -a
 
       - name: Open pull request
         uses: repo-sync/pull-request@v2
         with:
-          destination_branch: 'main'
+          destination_branch: 'master'
           pr_title: 'chore: ${{ env.MESSAGE }}'
           pr_body: 'This pull request will ${{ env.MESSAGE }}.'
           pr_draft: true
